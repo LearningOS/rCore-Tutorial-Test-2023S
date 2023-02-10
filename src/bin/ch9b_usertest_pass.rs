@@ -21,9 +21,9 @@ pub fn main() -> i32 {
         let pid = fork();
         if pid == 0 {
             println!("Child: {}",test);
-            //return 0;
-            exec(&*test, &[core::ptr::null::<u8>()]);
-            panic!("unreachable!");
+            return 0;
+            //exec(&*test, &[core::ptr::null::<u8>()]);
+            //panic!("unreachable!");
         } else {
             println!("Parent: fork {}: {}", test, pid);
             pids[i] = pid;

@@ -7,6 +7,24 @@ extern crate user_lib;
 const TESTS: &[&str] = &[
     "ch2b_hello_world\0",
     "ch2b_power_3\0",
+    "ch2b_power_5\0",
+    "ch2b_power_7\0",
+    "ch3b_yield0\0",
+    "ch3b_yield1\0",
+    "ch3b_yield2\0",
+    "ch5b_exit\0",
+    "ch5b_forktest_simple\0",
+    "ch5b_forktest\0",
+    "ch6b_filetest_simple\0",
+    "ch6b_cat\0",
+    "ch7b_pipetest\0",
+    "ch8b_mpsc_sem\0",
+    "ch8b_phil_din_mutex\0",
+    "ch8b_race_adder_mutex_spin\0",
+    "ch8b_sync_sem\0",
+    "ch8b_test_condvar\0",
+    "ch8b_threads\0",
+    "ch8b_threads_arg\0",
 ];
 
 const TEST_NUM: usize = TESTS.len();
@@ -20,18 +38,14 @@ pub fn main() -> i32 {
         println!("Usertests: Running {}", test);
         let pid = fork();
         if pid == 0 {
-            println!("Child: {}",test);
-            //return 0;
             exec(&*test, &[core::ptr::null::<u8>()]);
             panic!("unreachable!");
         } else {
-            println!("Parent: fork {}: {}", test, pid);
             pids[i] = pid;
         }
     }
     let mut xstate: i32 = Default::default();
     for (i, &test) in TESTS.iter().enumerate() {
-        println!("Parent: wait {}",pids[i]);
         let wait_pid = waitpid(pids[i] as usize, &mut xstate);
         assert_eq!(pids[i], wait_pid);
         println!(

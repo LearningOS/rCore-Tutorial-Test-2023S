@@ -7,7 +7,7 @@ extern crate user_lib;
 extern crate alloc;
 
 use alloc::format;
-use user_lib::{close, fork, get_time, pipe, read, wait, write};
+use user_lib::{close, fork, get_time, pipe, read, wait, write,getpid};
 
 const LENGTH: usize = 3000;
 #[no_mangle]
@@ -41,7 +41,7 @@ pub fn main() -> i32 {
         close(up_pipe_fd[1]);
         // generate a long random string
         for ch in random_str.iter_mut().take(LENGTH) {
-            *ch = get_time() as u8;
+            *ch = getpid() as u8;
         }
         // send it
         assert_eq!(

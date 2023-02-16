@@ -472,3 +472,7 @@ pub fn sigprocmask(mask: u32) -> isize {
 pub fn sigreturn() -> isize {
     sys_sigreturn()
 }
+
+pub fn connect(ip: u32, sport: u16, dport: u16) -> isize {
+    sys_connect(ip, sport, dport)
+}

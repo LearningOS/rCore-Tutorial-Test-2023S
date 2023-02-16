@@ -30,6 +30,7 @@ pub const SYSCALL_SPAWN: usize = 400;
 pub const SYSCALL_MAIL_READ: usize = 401;
 pub const SYSCALL_MAIL_WRITE: usize = 402;
 pub const SYSCALL_DUP: usize = 24;
+pub const SYSCALL_CONNECT: usize = 29;
 pub const SYSCALL_PIPE: usize = 59;
 pub const SYSCALL_TASK_INFO: usize = 410;
 pub const SYSCALL_THREAD_CREATE: usize = 460;
@@ -291,4 +292,8 @@ pub fn sys_sigreturn() -> isize {
 
 pub fn sys_kill(pid: usize, signal: i32) -> isize {
     syscall(SYSCALL_KILL, [pid, signal as usize, 0])
+}
+
+pub fn sys_connect(dest: u32, sport: u16, dport: u16) -> isize {
+    syscall(SYSCALL_CONNECT, [dest as usize, sport as usize, dport as usize])
 }

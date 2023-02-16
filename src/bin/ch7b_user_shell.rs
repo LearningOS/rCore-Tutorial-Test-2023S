@@ -14,7 +14,7 @@ const BS: u8 = 0x08u8;
 use alloc::string::String;
 use alloc::vec::Vec;
 use user_lib::console::getchar;
-use user_lib::{close, dup, exec, flush, fork, open, waitpid, OpenFlags};
+use user_lib::{close, dup, exec, flush, fork, open, waitpid, pipe, OpenFlags};
 
 #[no_mangle]
 pub fn main() -> i32 {
@@ -64,6 +64,22 @@ pub fn main() -> i32 {
                         args_copy.drain(idx..=idx + 1);
                     }
 
+                    // redirect pipe
+                    let mut pipe_args_copy: Vec<String> = Vec::new();
+                    if let Some((idx, _)) = args_copy
+                        .iter()
+                        .enumerate()
+                        .find(|(_, arg)| arg.as_str() == "|\0")
+                    {
+                        pipe_args_copy = args_copy.drain(idx + 1..).collect();
+                        args_copy.drain(idx..);
+                    }
+
+                    let mut pipe_fd = [0usize; 2];
+                    if !pipe_args_copy.is_empty() {
+                        pipe(&mut pipe_fd);
+                    }
+
                     let mut args_addr: Vec<*const u8> =
                         args_copy.iter().map(|arg| arg.as_ptr()).collect();
                     args_addr.push(0 as *const u8);
@@ -94,6 +110,15 @@ pub fn main() -> i32 {
                             assert_eq!(dup(output_fd), 1);
                             close(output_fd);
                         }
+
+                        // pipe redirection
+                        if !pipe_args_copy.is_empty() {
+                            close(pipe_fd[0]);
+                            close(1);
+                            assert_eq!(dup(pipe_fd[1]), 1);
+                            close(pipe_fd[1]);
+                        }
+
                         // child process
                         if exec(args_copy[0].as_str(), args_addr.as_slice()) == -1 {
                             println!("Error when executing!");
@@ -101,6 +126,32 @@ pub fn main() -> i32 {
                         }
                         unreachable!();
                     } else {
+                        // pipe subprocess
+                        if !pipe_args_copy.is_empty() {
+                            let mut pipe_args_addr: Vec<*const u8> =
+                                pipe_args_copy.iter().map(|arg| arg.as_ptr()).collect();
+                            pipe_args_addr.push(0 as *const u8);
+
+                            let pipe_pid = fork();
+                            if pipe_pid == 0 {
+                                close(pipe_fd[1]);
+                                close(0);
+                                assert_eq!(dup(pipe_fd[0]), 0);
+                                close(pipe_fd[0]);
+                                if exec(pipe_args_copy[0].as_str(), pipe_args_addr.as_slice()) == -1
+                                {
+                                    println!("Error when executing!");
+                                    return -4;
+                                }
+                                unreachable!();
+                            }
+
+                            let mut exit_code: i32 = 0;
+                            let exit_pid = waitpid(pipe_pid as usize, &mut exit_code);
+                            assert_eq!(pipe_pid, exit_pid);
+                            println!("Shell: Process {} exited with code {}", pipe_pid, exit_code);
+                        }
+
                         let mut exit_code: i32 = 0;
                         let exit_pid = waitpid(pid as usize, &mut exit_code);
                         assert_eq!(pid, exit_pid);
